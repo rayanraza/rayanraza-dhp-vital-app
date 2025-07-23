@@ -740,7 +740,10 @@ const HealthAdminDashboard = () => {
       heartRate: { value: patient.vitals.hr, lastUpdated: new Date() },
       oxygenSaturation: { value: patient.vitals.spo2, lastUpdated: new Date() },
       weight: { value: patient.vitals.weight, lastUpdated: new Date() },
-      temperature: { value: patient.vitals.temp, lastUpdated: new Date() },
+      temperature: {
+        value: (patient.vitals.temp * 9) / 5 + 32,
+        lastUpdated: new Date(),
+      },
       respiratoryRate: { value: patient.vitals.rr, lastUpdated: new Date() },
     });
   };
