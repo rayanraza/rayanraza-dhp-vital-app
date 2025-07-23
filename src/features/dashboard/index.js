@@ -35,6 +35,7 @@ const VitalStatsCard = ({
   color,
   delay = 0,
   isUpdating = false,
+  style = {},
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [pulseAnimation, setPulseAnimation] = useState(false);
@@ -54,6 +55,7 @@ const VitalStatsCard = ({
 
   return (
     <div
+      style={style}
       className={`bg-white rounded-xl p-6 shadow-sm border border-gray-100 transform transition-all duration-700 ${
         isVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
       } ${pulseAnimation ? "ring-2 ring-blue-200 ring-opacity-75" : ""}`}
@@ -180,7 +182,7 @@ const ECGCard = ({
         <svg
           width="100%"
           height="100%"
-          viewBox="0 0 300 60"
+          viewBox="0 0 800 60"
           className="absolute inset-0"
         >
           {/* Grid */}
@@ -201,7 +203,7 @@ const ECGCard = ({
             </pattern>
             <pattern
               id="ecg-grid-major"
-              width="75"
+              width="150"
               height="60"
               patternUnits="userSpaceOnUse"
             >
@@ -227,7 +229,7 @@ const ECGCard = ({
               points={ecgData
                 .map(
                   (point, i) =>
-                    `${(i / ecgData.length) * 300},${30 - point.voltage * 25}`
+                    `${(i / ecgData.length) * 800},${30 - point.voltage * 25}`
                 )
                 .join(" ")}
               className="drop-shadow-sm"
@@ -309,32 +311,6 @@ const ECGCard = ({
     </div>
   );
 };
-
-const AppointmentCard = ({ doctor, patient, time, type, price }) => (
-  <div className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors">
-    <div className="flex items-center space-x-3">
-      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-        <span className="text-blue-600 font-medium text-sm">
-          {doctor
-            .split(" ")
-            .map((n) => n[0])
-            .join("")}
-        </span>
-      </div>
-      <div>
-        <p className="font-medium text-gray-900">{patient}</p>
-        <p className="text-sm text-gray-500">{type}</p>
-      </div>
-    </div>
-    <div className="text-right">
-      <p className="text-sm font-medium text-gray-900">{time}</p>
-      <p className="text-sm text-gray-500">${price}</p>
-    </div>
-    <button className="text-blue-600 hover:text-blue-700 ml-4">
-      <Phone className="w-4 h-4" />
-    </button>
-  </div>
-);
 
 const PatientListItem = ({ patient, isActive, onClick }) => (
   <div
@@ -437,9 +413,7 @@ const SidebarItem = ({
 const HealthAdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isLoaded, setIsLoaded] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [activePatientId, setActivePatientId] = useState(1);
-  const [showHeartbeatChart, setShowHeartbeatChart] = useState(false);
   const [heartbeatData, setHeartbeatData] = useState([]);
 
   // Patient database with different medical profiles
@@ -597,7 +571,10 @@ const HealthAdminDashboard = () => {
       heartRate: { value: patient.vitals.hr, lastUpdated: new Date() },
       oxygenSaturation: { value: patient.vitals.spo2, lastUpdated: new Date() },
       weight: { value: patient.vitals.weight, lastUpdated: new Date() },
-      temperature: { value: patient.vitals.temp, lastUpdated: new Date() },
+      temperature: {
+        value: (patient.vitals.temp * 9) / 5 + 32,
+        lastUpdated: new Date(),
+      },
       respiratoryRate: { value: patient.vitals.rr, lastUpdated: new Date() },
     };
   });
@@ -942,9 +919,48 @@ const HealthAdminDashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
             {/* Left Section: Real-time Vital Signs Cards (3x2 grid) */}
-            <div className="lg:col-span-3">
+
+            <div className="lg:col-span-4">
+              {/* One Row: Blood Pressure (1 col) + Heart Rate (3 cols) */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="col-span-1">
+                  <VitalStatsCard
+                    style={{ height: "100%" }}
+                    icon={Droplets}
+                    title="Blood Pressure"
+                    value={`${Math.round(
+                      vitals.bloodPressure.systolic
+                    )}/${Math.round(vitals.bloodPressure.diastolic)}`}
+                    unit="mmHg"
+                    lastRecorded={formatTimestamp(
+                      vitals.bloodPressure.lastUpdated
+                    )}
+                    color="bg-red-500"
+                    delay={0}
+                    isUpdating={true}
+                  />
+                </div>
+                <div className="col-span-3">
+                  <ECGCard
+                    title="Pulse/Heart Rate"
+                    value={Math.round(vitals.heartRate.value)}
+                    unit="bpm"
+                    lastRecorded={formatTimestamp(vitals.heartRate.lastUpdated)}
+                    color="bg-red-500"
+                    delay={100}
+                    isUpdating={true}
+                    ecgData={heartbeatData}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+            {/* Left Section: Real-time Vital Signs Cards (3x2 grid) */}
+
+            <div className="lg:col-span-2">
               {/* First Row: Blood Pressure, Heart Rate, Temperature */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <VitalStatsCard
                   icon={Droplets}
                   title="Blood Pressure"
@@ -969,20 +985,10 @@ const HealthAdminDashboard = () => {
                   isUpdating={true}
                   ecgData={heartbeatData}
                 />
-                <VitalStatsCard
-                  icon={Thermometer}
-                  title="Temperature"
-                  value={vitals.temperature.value.toFixed(1)}
-                  unit="°C"
-                  lastRecorded={formatTimestamp(vitals.temperature.lastUpdated)}
-                  color="bg-orange-500"
-                  delay={200}
-                  isUpdating={true}
-                />
-              </div>
+              </div> */}
 
               {/* Second Row: SPO2, Weight, Respiratory Rate */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <VitalStatsCard
                   icon={Activity}
                   title="SPO2 (Blood Oxygen Saturation)"
@@ -1005,6 +1011,18 @@ const HealthAdminDashboard = () => {
                   delay={400}
                   isUpdating={true}
                 />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <VitalStatsCard
+                  icon={Thermometer}
+                  title="Temperature"
+                  value={vitals.temperature.value.toFixed(1)}
+                  unit="°F"
+                  lastRecorded={formatTimestamp(vitals.temperature.lastUpdated)}
+                  color="bg-orange-500"
+                  delay={200}
+                  isUpdating={true}
+                />
                 <VitalStatsCard
                   icon={Wind}
                   title="Respiratory Rate"
@@ -1021,7 +1039,7 @@ const HealthAdminDashboard = () => {
             </div>
 
             {/* Right Section: Patient List */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-2">
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 h-full">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">
